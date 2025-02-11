@@ -162,7 +162,7 @@ struct Particle
 struct Box
 {
     float x_u, x_l, y_u, y_l;
-    vector<Box> children;
+    vector<Box*> children;
     vector<Particle> vals;
 
     bool operator==(const Box& other) const
@@ -188,6 +188,7 @@ struct QuadTree
 	QuadTree(T node)
 	{
 		tree.insertAtHead(node);
+		quadtree.push_front(node);
 	}
 
 
@@ -219,22 +220,23 @@ struct QuadTree
 		RT.y_l = box.y_l + ((box.y_u - box.y_l)/2);
 		RT.y_u = box.y_u;
 
-		tree.head->data.children.push_back(LB);
-		tree.head->data.children.push_back(LT);
-		tree.head->data.children.push_back(RB);
-		tree.head->data.children.push_back(RT);
+
+		quadtree.push_front(LB);
+		quadtree.push_front(LT);
+		quadtree.push_front(RB);
+		quadtree.push_front(RT);
+
+		quadtree[4].children.push_back(&quadtree[0]);
+		quadtree[4].children.push_back(&quadtree[1]);
+		quadtree[4].children.push_back(&quadtree[2]);
+		quadtree[4].children.push_back(&quadtree[3]);
+
+		tree.insertAtHead(LB);
+		tree.insertAtHead(LT);
+		tree.insertAtHead(RB);
+		tree.insertAtHead(RT);
 
 
-
-	}
-
-	void addChildrenToTree()
-	{
-		Box box = tree.head->data;
-		for (int i = 0; i<4; i++)
-		{
-			tree.insertAtHead(box.children[i]);
-		}
 	}
 
 
@@ -246,7 +248,6 @@ struct QuadTree
 		int count = 0;
 		partCount+=1;
 		Node<Particle>* temp = particles.head;
-		particles.display();
 		Box box = tree.head->data;
 		vector<Particle> to_remove;
 		while (temp)
@@ -261,9 +262,6 @@ struct QuadTree
 					if (count > maxParts)
 					{
 						spawnChildren();
-						addChildrenToTree();
-						//for (Particle val : box.vals)
-						//	particles.insertAtHead(val);
 						box.vals = vector<Particle>();
 						temp = particles.head;
 						addParticles(particles,maxParts);
@@ -274,7 +272,6 @@ struct QuadTree
 
 					box.vals.push_back(part);
 					to_remove.push_back(part);
-					//cout << to_remove.size() << endl;
 
 
 				}
@@ -283,13 +280,11 @@ struct QuadTree
 		}
 
 		for (const Particle& p : to_remove)
-			{cout << "removal" << endl;
-        	particles.deleteNode(p); }
+		{
+        	particles.deleteNode(p);
+		 }
 
-		//cout << partCount << endl;
-		quadtree.push_front(box);
 		tree.deleteNode(box);
-		//tree.display();
 		addParticles(particles, maxParts);
 
 	}
