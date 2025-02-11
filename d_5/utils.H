@@ -1,4 +1,5 @@
 #include <vector>
+#include <deque>
 
 #include <iostream>
 
@@ -93,12 +94,15 @@ class LinkedList
 	}
 
 	void display() {
+			int count = 0;
         	Node<T>* temp = head;
         	while (temp) {
-            	std::cout << temp->data << " -> ";
+            	//std::cout << temp->data << " -> ";
             	temp = temp->next;
+				count += 1;
         	}
-        	std::cout << "NULL" << std::endl;
+			cout << count << endl;
+        	//std::cout << "NULL" << std::endl;
    	 }
 
 	void reverse()
@@ -162,90 +166,127 @@ struct Box
         }
     bool operator!=(const Box& other) const
         {
-            return (x_u != other.x_u | y_u != other.y_u |
-                    x_l != other.x_l | y_l != other.y_l);
+            return (x_u != other.x_u || y_u != other.y_u ||
+                    x_l != other.x_l || y_l != other.y_l);
         }
 };
 
-void spawnChildren(Box box)
+template <typename T>
+struct QuadTree
 {
+	//LinkedList<T> searchList;
+	LinkedList<T> tree;
+	deque<Box> quadtree;
+	int partCount = 0;
 
-    //if (box.children[0]){return;}
-    
-    Box LB, RB, LT, RT;
-
-    LB.x_u = box.x_u - ((box.x_u - box.x_l) / 2);
-    LB.x_l = box.x_l;
-    LB.y_u = box.y_u - ((box.y_u - box.y_l)/ 2);
-    LB.y_l = box.y_l;
-
-    LT.x_u = box.x_u - ((box.x_u - box.x_l) / 2);
-    LT.x_l = box.x_l;
-    LT.y_l = box.y_l + ((box.y_u - box.y_l)/ 2);
-    LT.y_u = box.y_u;
-
-    RB.x_u = box.x_u;
-    RB.x_l = box.x_l + ((box.x_u - box.x_l)/2);
-    RB.y_u = box.y_u - ((box.y_u - box.y_l)/2);
-    RB.y_l = box.y_l;
-
-    RT.x_u = box.x_u;
-    RT.x_l = box.x_l + ((box.x_u - box.x_l)/2);
-    RT.y_l = box.y_l + ((box.y_u - box.y_l)/2);
-    RT.y_u = box.y_u;
-
-    box.children[0] = LB;
-    box.children[1] = LT;
-    box.children[2] = RB;
-    box.children[3] = RT;
-
-
-}
-
-void addChildrenToTree(Box box, LinkedList<Box> quadtree)
-{
-    for (int i = 0; i<4; i++)
-    {
-        quadtree.insertAtHead(box.children[i]);
-    }
-}
+	QuadTree(T node)
+	{
+		tree.insertAtHead(node);
+	}
 
 
 
-void addParticles(Box box, LinkedList<Particle> particles, LinkedList<Box> quadtree, int maxParts)
-{
-    int count = 0;
-    Node<Particle>* temp = particles.head;
-    while (temp)
-    {
-        Particle part = temp->data;
-        if (part.x < box.x_u && part.x > box.x_l)
-        {
+	void spawnChildren()
+	{
 
-            if (part.y < box.y_u && part.y > box.y_l)
-            {
-                count+=1;
-                if (count > maxParts)
-                {
-                    spawnChildren(box);
-                    addChildrenToTree(box, quadtree);
-                    for (Particle val : box.vals)
-                        particles.insertAtHead(val);
-                    box.vals;
-                    temp = particles.head;
-                    addParticles(quadtree.head->data, particles, quadtree, maxParts);
+		Box box = tree.head->data;
 
-                }
+		Box LB, RB, LT, RT;
 
-                box.vals.push_back(part);
-                particles.deleteNode(part);
+		LB.x_u = box.x_u - ((box.x_u - box.x_l) / 2);
+		LB.x_l = box.x_l;
+		LB.y_u = box.y_u - ((box.y_u - box.y_l)/ 2);
+		LB.y_l = box.y_l;
 
-            }
-        }
-        temp = temp->next;
-    }
-    quadtree.deleteNode(box);
-    addParticles(quadtree.head->data, particles, quadtree, maxParts);
+		LT.x_u = box.x_u - ((box.x_u - box.x_l) / 2);
+		LT.x_l = box.x_l;
+		LT.y_l = box.y_l + ((box.y_u - box.y_l)/ 2);
+		LT.y_u = box.y_u;
+
+		RB.x_u = box.x_u;
+		RB.x_l = box.x_l + ((box.x_u - box.x_l)/2);
+		RB.y_u = box.y_u - ((box.y_u - box.y_l)/2);
+		RB.y_l = box.y_l;
+
+		RT.x_u = box.x_u;
+		RT.x_l = box.x_l + ((box.x_u - box.x_l)/2);
+		RT.y_l = box.y_l + ((box.y_u - box.y_l)/2);
+		RT.y_u = box.y_u;
+
+		tree.head->data.children.push_back(LB);
+		tree.head->data.children.push_back(LT);
+		tree.head->data.children.push_back(RB);
+		tree.head->data.children.push_back(RT);
 
 
-}
+
+	}
+
+	void addChildrenToTree()
+	{
+		Box box = tree.head->data;
+		for (int i = 0; i<4; i++)
+		{
+			tree.insertAtHead(box.children[i]);
+		}
+	}
+
+
+
+	void addParticles(LinkedList<Particle>& particles, int maxParts)
+	{
+
+		if (!particles.head->next){cout<<"All particles sorted!" << endl;return;}
+		int count = 0;
+		partCount+=1;
+		Node<Particle>* temp = particles.head;
+		particles.display();
+		Box box = tree.head->data;
+		vector<Particle> to_remove;
+		while (temp)
+		{
+			Particle part = temp->data;
+			if (part.x < box.x_u && part.x > box.x_l)
+			{
+
+				if (part.y < box.y_u && part.y > box.y_l)
+				{
+					count+=1;
+					if (count > maxParts)
+					{
+						spawnChildren();
+						addChildrenToTree();
+						//for (Particle val : box.vals)
+						//	particles.insertAtHead(val);
+						box.vals = vector<Particle>();
+						temp = particles.head;
+						addParticles(particles,maxParts);
+
+						return;
+
+					}
+
+					box.vals.push_back(part);
+					to_remove.push_back(part);
+					//cout << to_remove.size() << endl;
+
+
+				}
+			}
+			temp = temp->next;
+		}
+
+		for (const Particle& p : to_remove)
+			{cout << "removal" << endl;
+        	particles.deleteNode(p); }
+
+		//cout << partCount << endl;
+		quadtree.push_front(box);
+		tree.deleteNode(box);
+		//tree.display();
+		addParticles(particles, maxParts);
+
+	}
+
+
+};

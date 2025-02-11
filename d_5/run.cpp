@@ -4,17 +4,44 @@ int main()
 {
 
     // Instantiate particle list
-    int numParts = 20;
+    int numParticles = 100;
 
-    LinkedList<Particle> parts;
+    LinkedList<Particle> particleSystem;
 
-    for (int i = 0; i < numParts; i++)
+    for (int i = 0; i < numParticles; i++)
     {
         Particle p;
-        p.x = 0.05*i;
-        p.y = 0.05*i;
+        p.x = 0.01*i;
+        p.y = 0.01*i/2;
         p.r = 0.01;
-        parts.insertAtEnd(p);
+        particleSystem.insertAtEnd(p);
+    }
+
+
+    float render_view_x = 1.0f;
+    float render_view_y = 1.0f;
+
+    float origin = 0.0f;
+
+
+    float allParticleRadii = 0.02f;
+
+    Box rootNode;
+
+    rootNode.x_l = origin;rootNode.y_l = origin;
+    rootNode.x_u = render_view_x; rootNode.y_u = render_view_y;
+
+    int maxParticleNumber = 4;
+
+    QuadTree qt(rootNode);
+
+    qt.addParticles(particleSystem, maxParticleNumber);
+
+    //cout << qt.quadtree.size() << endl;
+
+    for (Box elem : qt.quadtree)
+    {
+        cout << elem.x_u << ", " << elem.x_l << ", " << elem.y_u << ", " << elem.y_l << endl;
     }
 
 
