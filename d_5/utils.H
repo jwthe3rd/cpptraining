@@ -6,6 +6,12 @@
 
 using namespace std;
 
+
+/*
+Full construction of quadtree data type for future particle rendering and collision detection
+
+*/
+
 template <typename T>
 class Node 
 {
