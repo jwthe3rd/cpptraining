@@ -1,0 +1,251 @@
+#include <vector>
+
+#include <iostream>
+
+
+using namespace std;
+
+template <typename T>
+class Node 
+{
+    public:	
+	T data;
+	Node* next;
+
+	Node(T val) 
+	{
+		data = val;
+		next = nullptr;
+	}
+};
+
+template <typename T>
+class LinkedList
+{
+    private:
+
+    public:
+	Node<T>* head;
+	LinkedList() 
+	{
+		head = nullptr;
+	}
+
+	void insertAtHead(T val)
+	{
+		Node<T>* newNode = new Node<T>(val);
+		newNode->next = head;
+		head = newNode;
+	}
+
+	
+	void insertAtEnd(T val)
+	{
+		Node<T>* newNode = new Node<T>(val);
+
+		if (!head)
+		{
+			head = newNode;
+			return;
+		}
+
+		Node<T>* temp = head;
+		while (temp->next)
+		{
+			temp = temp->next;
+		}
+		temp->next = newNode;
+	}
+
+
+	void deleteNode(T val)
+	{
+		if (!head) return;
+
+		if (head->data == val)
+		{
+			Node<T>* temp = head;
+			head = head->next;
+			delete temp;
+
+			return;
+		}
+
+
+		Node<T>* temp = head;
+
+		while (temp->next && temp->next->data != val)
+		{
+			temp=temp->next;
+		}
+
+		if (!temp->next)
+		{	
+			cout << "Value not in array" << endl;
+			return;
+		}
+
+		Node<T>* nodeToDelete = temp->next;
+
+		temp->next = temp->next->next;
+
+		delete nodeToDelete;
+	}
+
+	void display() {
+        	Node<T>* temp = head;
+        	while (temp) {
+            	std::cout << temp->data << " -> ";
+            	temp = temp->next;
+        	}
+        	std::cout << "NULL" << std::endl;
+   	 }
+
+	void reverse()
+	{
+		Node<T>* prev = nullptr;
+		Node<T>* curr = head;
+		Node<T>* next = nullptr;
+
+		while(curr)
+		{
+			next = curr->next;
+			curr->next = prev;
+			prev = curr;
+			curr = next;
+		}
+		head = prev;
+	}
+
+
+
+	~LinkedList()
+	{
+		Node<T>* temp;
+
+		while(head)
+		{
+			temp = head;
+			head = head->next;
+			delete temp;
+		}
+	}
+
+
+};
+
+struct Particle
+{
+        float x, y, r;
+
+
+        bool operator==(const Particle& other) const
+        {
+            return (x == other.x && y == other.y);
+        }
+        bool operator!=(const Particle& other) const
+        {
+            return (x != other.x | y != other.y);
+        }
+};
+
+struct Box
+{
+    float x_u, x_l, y_u, y_l;
+    vector<Box> children;
+    vector<Particle> vals;
+
+    bool operator==(const Box& other) const
+        {
+            return (x_u == other.x_u && y_u == other.y_u &&
+                    x_l == other.x_l && y_l == other.y_l);
+        }
+    bool operator!=(const Box& other) const
+        {
+            return (x_u != other.x_u | y_u != other.y_u |
+                    x_l != other.x_l | y_l != other.y_l);
+        }
+};
+
+void spawnChildren(Box box)
+{
+
+    //if (box.children[0]){return;}
+    
+    Box LB, RB, LT, RT;
+
+    LB.x_u = box.x_u - ((box.x_u - box.x_l) / 2);
+    LB.x_l = box.x_l;
+    LB.y_u = box.y_u - ((box.y_u - box.y_l)/ 2);
+    LB.y_l = box.y_l;
+
+    LT.x_u = box.x_u - ((box.x_u - box.x_l) / 2);
+    LT.x_l = box.x_l;
+    LT.y_l = box.y_l + ((box.y_u - box.y_l)/ 2);
+    LT.y_u = box.y_u;
+
+    RB.x_u = box.x_u;
+    RB.x_l = box.x_l + ((box.x_u - box.x_l)/2);
+    RB.y_u = box.y_u - ((box.y_u - box.y_l)/2);
+    RB.y_l = box.y_l;
+
+    RT.x_u = box.x_u;
+    RT.x_l = box.x_l + ((box.x_u - box.x_l)/2);
+    RT.y_l = box.y_l + ((box.y_u - box.y_l)/2);
+    RT.y_u = box.y_u;
+
+    box.children[0] = LB;
+    box.children[1] = LT;
+    box.children[2] = RB;
+    box.children[3] = RT;
+
+
+}
+
+void addChildrenToTree(Box box, LinkedList<Box> quadtree)
+{
+    for (int i = 0; i<4; i++)
+    {
+        quadtree.insertAtHead(box.children[i]);
+    }
+}
+
+
+
+void addParticles(Box box, LinkedList<Particle> particles, LinkedList<Box> quadtree, int maxParts)
+{
+    int count = 0;
+    Node<Particle>* temp = particles.head;
+    while (temp)
+    {
+        Particle part = temp->data;
+        if (part.x < box.x_u && part.x > box.x_l)
+        {
+
+            if (part.y < box.y_u && part.y > box.y_l)
+            {
+                count+=1;
+                if (count > maxParts)
+                {
+                    spawnChildren(box);
+                    addChildrenToTree(box, quadtree);
+                    for (Particle val : box.vals)
+                        particles.insertAtHead(val);
+                    box.vals;
+                    temp = particles.head;
+                    addParticles(quadtree.head->data, particles, quadtree, maxParts);
+
+                }
+
+                box.vals.push_back(part);
+                particles.deleteNode(part);
+
+            }
+        }
+        temp = temp->next;
+    }
+    quadtree.deleteNode(box);
+    addParticles(quadtree.head->data, particles, quadtree, maxParts);
+
+
+}
