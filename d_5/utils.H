@@ -138,9 +138,11 @@ class LinkedList
 
 };
 
+
+template <typename T>
 struct Particle
 {
-        float x, y, r;
+        T x, y, r;
 
 
         bool operator==(const Particle& other) const
@@ -153,138 +155,150 @@ struct Particle
         }
 };
 
+template <typename T>
 struct Box
 {
-    float x_u, x_l, y_u, y_l;
-    vector<Box> children;
-    vector<Particle> vals;
+    T x, y, w, h;
 
-    bool operator==(const Box& other) const
-        {
-            return (x_u == other.x_u && y_u == other.y_u &&
-                    x_l == other.x_l && y_l == other.y_l);
-        }
-    bool operator!=(const Box& other) const
-        {
-            return (x_u != other.x_u || y_u != other.y_u ||
-                    x_l != other.x_l || y_l != other.y_l);
-        }
+	Box(){};
+    
+	Box(T _x, T _y, T _w, T _h)
+	{
+		x = _x;
+		y = _y;
+		w = _w;
+		h = _h;
+	}
+
+	bool contains(Particle<T> p)
+	{
+		return (p.x >= x && p.x <= x+w && p.y >= y && p.y <= y+h);
+	}
+	bool contains(T px, T py)
+	{
+		return (px >= x && px <= x+w && py >= y && py <= y+h);
+	}
+
+	bool intersects(Box<T> range)
+	{
+		T q1x = range.x+w;
+		T q1y = range.y+h;
+		T q2x = range.x;
+		T q2y = range.y+h;
+		T q3x = range.x;
+		T q3y = range.y;
+		T q4x = range.x+w;
+		T q4y = range.y;
+
+		return (contains(q1x, q1y) || contains(q2x, q2y)
+		 || contains(q3x, q3y) || contains(q4x, q4y));
+	}
+
+
 };
+
 
 template <typename T>
-struct QuadTree
+class QuadTree
 {
-	//LinkedList<T> searchList;
-	LinkedList<T> tree;
-	deque<Box> quadtree;
-	int partCount = 0;
+	private:
+		static const int CAPACITY = 10;
+		Box<T> boundary;
+		vector<Particle<T>> particles;
+		bool divided = false;
+		QuadTree *TL, *TR, *BL, *BR;
 
-	QuadTree(T node)
-	{
-		tree.insertAtHead(node);
-	}
-
-
-
-	void spawnChildren()
-	{
-
-		Box box = tree.head->data;
-
-		Box LB, RB, LT, RT;
-
-		LB.x_u = box.x_u - ((box.x_u - box.x_l) / 2);
-		LB.x_l = box.x_l;
-		LB.y_u = box.y_u - ((box.y_u - box.y_l)/ 2);
-		LB.y_l = box.y_l;
-
-		LT.x_u = box.x_u - ((box.x_u - box.x_l) / 2);
-		LT.x_l = box.x_l;
-		LT.y_l = box.y_l + ((box.y_u - box.y_l)/ 2);
-		LT.y_u = box.y_u;
-
-		RB.x_u = box.x_u;
-		RB.x_l = box.x_l + ((box.x_u - box.x_l)/2);
-		RB.y_u = box.y_u - ((box.y_u - box.y_l)/2);
-		RB.y_l = box.y_l;
-
-		RT.x_u = box.x_u;
-		RT.x_l = box.x_l + ((box.x_u - box.x_l)/2);
-		RT.y_l = box.y_l + ((box.y_u - box.y_l)/2);
-		RT.y_u = box.y_u;
-
-		tree.head->data.children.push_back(LB);
-		tree.head->data.children.push_back(LT);
-		tree.head->data.children.push_back(RB);
-		tree.head->data.children.push_back(RT);
-
-
-
-	}
-
-	void addChildrenToTree()
-	{
-		Box box = tree.head->data;
-		for (int i = 0; i<4; i++)
+	public:
+		QuadTree(Box<T> _boundary)
 		{
-			tree.insertAtHead(box.children[i]);
+			boundary = _boundary;
+			TL = nullptr;
+			TR = nullptr;
+			BL = nullptr;
+			BR = nullptr;
 		}
-	}
 
-
-
-	void addParticles(LinkedList<Particle>& particles, int maxParts)
-	{
-
-		if (!particles.head->next){cout<<"All particles sorted!" << endl;return;}
-		int count = 0;
-		partCount+=1;
-		Node<Particle>* temp = particles.head;
-		Box box = tree.head->data;
-		vector<Particle> to_remove;
-		while (temp)
+		~QuadTree()
 		{
-			Particle part = temp->data;
-			if (part.x < box.x_u && part.x > box.x_l)
+			delete TL;
+			delete TR;
+			delete BL;
+			delete BR;
+		}
+
+		void subdivide()
+		{
+			T x = boundary.x;
+			T y = boundary.y;
+			T w = boundary.w / 2;
+			T h = boundary.h / 2;
+
+
+			TL = new QuadTree<T>(Box(x, y+h, w, h));
+			TR = new QuadTree<T>(Box(x+w, y+h, w, h));
+			BL = new QuadTree<T>(Box(x, y, w, h));
+			BR = new QuadTree<T>(Box(x+w, y, w, h));
+
+			divided = true;
+		}
+
+		bool insert(Particle<T> p)
+		{
+			if (!boundary.contains(p)) {return false;}
+
+			if (particles.size() < CAPACITY)
 			{
+				particles.push_back(p);
+				return true;
+			}
+			if (!divided)
+			{
+				subdivide();
+			}
+			if (BL->insert(p)) return true;
+			if (BR->insert(p)) return true;
+			if (TL->insert(p)) return true;
+			if (TR->insert(p)) return true;
 
-				if (part.y < box.y_u && part.y > box.y_l)
+			return false;
+		}
+
+		void query(Box<T> range, vector<Particle<T>> &found)
+		{
+			if (!boundary.intersects(range)) {return;}
+
+			for (Particle<T> p : particles)
+			{
+				if (range.contains(p))
 				{
-					count+=1;
-					if (count > maxParts)
-					{
-						spawnChildren();
-						addChildrenToTree();
-						//for (Particle val : box.vals)
-						//	particles.insertAtHead(val);
-						box.vals = vector<Particle>();
-						temp = particles.head;
-						addParticles(particles,maxParts);
-
-						return;
-
-					}
-
-					box.vals.push_back(part);
-					to_remove.push_back(part);
-					//cout << to_remove.size() << endl;
-
-
+					found.push_back(p);
 				}
 			}
-			temp = temp->next;
+
+			if (divided)
+			{
+				BL->query(range, found);
+				BR->query(range, found);
+				TL->query(range, found);
+				TR->query(range, found);
+			}
 		}
 
-		for (const Particle& p : to_remove)
-        	{particles.deleteNode(p); }
 
-		//cout << partCount << endl;
-		quadtree.push_front(box);
-		tree.deleteNode(box);
-		//tree.display();
-		addParticles(particles, maxParts);
+		void print() {
+			for (Particle<T> p : particles) {
+				cout << "(" << p.x << ", " << p.y << ") " << endl;
+			}
+			if (divided) {
+				BL->print();
+				BR->print();
+				TL->print();
+				TR->print();
+			}
+		}
 
-	}
 
 
 };
+
+
