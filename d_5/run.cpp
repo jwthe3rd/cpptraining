@@ -43,13 +43,14 @@ int main()
     {
         cout << "Parent: " << elem.x_u << ", " << elem.x_l << ", " << elem.y_u << ", " << elem.y_l;
         if (elem.children.size()==0)
-        {cout << " --> Leaf Node!";}
-        cout << endl;
-        for (Box *elem2 : elem.children)
+        {cout << " --> Leaf Node!" << endl;}
+        else{
+            cout << endl;
+        for (Box elem2 : elem.children)
         {
 
-        cout << "Child: -----> " << elem2->x_u << ", " << elem2->x_l << ", " << elem2->y_u << ", " << elem2->y_l << endl;
-        }
+        cout << "Child: -----> " << elem2.x_u << ", " << elem2.x_l << ", " << elem2.y_u << ", " << elem2.y_l << endl;
+        }}
     }
 
 
