@@ -161,3 +161,60 @@ int main()
 
 }	
 
+
+	void addParticles_noRecursion(LinkedList<Particle>& particles, int maxParts)
+	{
+
+		if (!particles.head->next){cout<<"All particles sorted!" << endl;return;}
+		int count = 0;
+		Node<Particle>* temp = particles.head;
+		Box box = tree[0];
+		vector<Particle> to_remove;
+
+		while (particles.size() != 1)
+		{
+		temp = particles.head;
+		box = tree[0];
+		while (temp)
+		{
+			Particle part = temp->data;
+			if (part.x < box.x_u && part.x > box.x_l && part.y < box.y_u && part.y > box.y_l)
+			{
+
+				if (count == maxParts)
+				{
+					spawnChildren();
+					to_remove = vector<Particle>();
+					count = 0;
+					temp = particles.head;
+					box = tree[0];
+					cout << box.x_l << endl;
+				}
+
+				else
+				{
+					count+=1;
+					to_remove.push_back(part);
+					temp = temp->next;
+				}
+
+				}
+			else
+			{
+				temp = temp->next;
+			}
+			
+		}
+
+		for (const Particle& p : to_remove)
+		{
+        	particles.deleteNode(p);
+		 }
+		tree.pop_front();
+		to_remove = vector<Particle>();
+
+		}
+
+
+	}
+
