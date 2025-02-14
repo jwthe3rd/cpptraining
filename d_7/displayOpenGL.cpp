@@ -127,8 +127,23 @@ void generateCircle(float cx, float cy, float r) {
     }
     circleVertices.push_back(newCircleVertices);
 
-    // Bind VAO and VBO
-    glBufferData(GL_ARRAY_BUFFER, newCircleVertices.vertices.size() * sizeof(float), newCircleVertices.vertices.data(), GL_STATIC_DRAW);
+    std::vector<float> allVertices(circleVertices.size()*newCircleVertices.vertices.size());
+
+    for (Circle& circle : circleVertices)
+    {
+        for (float vx : circle.vertices)
+        {
+            allVertices.push_back(vx);
+        }
+    }
+
+    std::cout << allVertices.size() << std::endl;
+
+    glBindVertexArray(VAO);
+            
+            
+    glBufferData(GL_ARRAY_BUFFER,allVertices.size() * sizeof(float), allVertices.data(), GL_STATIC_DRAW);
+    //glBufferData(GL_ARRAY_BUFFER,newCircleVertices.vertices.size() * sizeof(float), newCircleVertices.vertices.data(), GL_STATIC_DRAW);
 
 
     glBindVertexArray(0); // Unbind
@@ -136,13 +151,18 @@ void generateCircle(float cx, float cy, float r) {
 
 
 void drawCircle() {
+    
+    glBindVertexArray(VAO);
 
-    for (const Circle& circle : circleVertices) {
+    size_t offset = 0;
 
-        glBindVertexArray(VAO);
+    for (Circle& circle : circleVertices) {
+
         glDrawArrays(GL_TRIANGLE_FAN, 0, circle.vertices.size() / 2);
-        glBindVertexArray(0);
+        offset+=circle.vertices.size() / 2;
     }
+    
+    glBindVertexArray(0);
 
     glFlush();
 }
@@ -211,9 +231,9 @@ int main() {
 
 
         GLenum err;
-while ((err = glGetError()) != GL_NO_ERROR) {
-    std::cout << "OpenGL Error: " << err << std::endl;
-}
+        while ((err = glGetError()) != GL_NO_ERROR) {
+            std::cout << "OpenGL Error: " << err << std::endl;
+        }
 
         glfwSwapBuffers(window);
         glfwPollEvents();
